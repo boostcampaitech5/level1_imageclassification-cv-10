@@ -18,7 +18,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 from dataset import MaskBaseDataset, BaseAugmentation, AlbumAugmentation
 from model import BaseModel, timmModel
-import timm
+
+###############################################
+import wandb
+wandb.init(project='resnet-50 pretrained test')
+###############################################
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -85,6 +89,14 @@ def increment_path(path, exist_ok=False):
 
 def train(data_dir, model_dir, args):
     seed_everything(args.seed)
+
+    ########################################
+    wandb.config = {
+        "learning_rate": args.lr,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size
+    }
+    ########################################
 
     save_dir = increment_path(os.path.join(model_dir, args.name))
 
@@ -187,7 +199,11 @@ def train(data_dir, model_dir, args):
                 )
                 logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
                 logger.add_scalar("Train/accuracy", train_acc, epoch * len(train_loader) + idx)
-
+                #########################################################
+                wandb.log({
+                    "Train/loss": train_loss, "Train/accuracy": train_acc
+                    }, step=epoch)
+                #########################################################
                 loss_value = 0
                 matches = 0
 
@@ -233,6 +249,11 @@ def train(data_dir, model_dir, args):
             logger.add_scalar("Val/loss", val_loss, epoch)
             logger.add_scalar("Val/accuracy", val_acc, epoch)
             logger.add_figure("results", figure, epoch)
+            ######################################################
+            wandb.log({
+                    "Val/loss": val_loss, "Val/accuracy": val_acc
+                    }, step=epoch)
+            ######################################################
             print()
 
 
