@@ -167,7 +167,7 @@ def train(data_dir, model_dir, args):
     skf = StratifiedKFold(n_splits=n_splits)
 
     counter = 0
-    patience = 10
+    patience = 5
     accumulation_steps = 2
 
     labels = [dataset.encode_multi_class(mask, gender, age) 
@@ -192,9 +192,13 @@ def train(data_dir, model_dir, args):
         # -- loss & metric
         criterion = create_criterion(args.criterion) 
         opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
+        
+        # resnet101d일때는 blocks 대신 layer1234, fc 
         train_params = [{'params': getattr(model, 'blocks').parameters(), 'lr': args.lr / 10, 'weight_decay':5e-4},
                     {'params': getattr(model, 'classifier').parameters(), 'lr': args.lr, 'weight_decay':5e-4}]
-        optimizer = opt_module(train_params)
+        optimizer = opt_module(
+            train_params
+        )
         scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
 
         # -- logging
@@ -236,14 +240,14 @@ def train(data_dir, model_dir, args):
                     )
                     logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
                     logger.add_scalar("Train/accuracy", train_acc, epoch * len(train_loader) + idx)
+                    
+                    loss_value = 0
+                    matches = 0
                     #########################################################
                     wandb.log({
                         f"{i+1}fold Train/loss": train_loss, f"{i+1}fold Train/accuracy": train_acc
-                    }, step=epoch)
+                    })
                     #########################################################
-                    loss_value = 0
-                    matches = 0
-
             scheduler.step()
 
             # val loop
@@ -295,13 +299,14 @@ def train(data_dir, model_dir, args):
                 )
                 logger.add_scalar("Val/loss", val_loss, epoch)
                 logger.add_scalar("Val/accuracy", val_acc, epoch)
+                print()
                 ######################################################
                 wandb.log({
                     f"{i+1}fold Val/loss": val_loss, f"{i+1}fold Val/accuracy": val_acc
-                }, step=epoch)
+                })
                 ######################################################    
                     
-                print()
+                
         torch.save(best_model['model'], best_model['path'])
 
 
