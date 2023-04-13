@@ -11,9 +11,9 @@ from dataset import TestDataset, MaskBaseDataset
 
 
 def load_model(saved_model, num_classes, device):
-    model_func = getattr(import_module("model"), args.model)
-    model = model_func(
-        num_classes=num_classes, device=device
+    model_cls = getattr(import_module("model"), args.model)
+    model = model_cls(
+        num_classes=num_classes
     )
 
     # tarpath = os.path.join(saved_model, 'best.tar.gz')

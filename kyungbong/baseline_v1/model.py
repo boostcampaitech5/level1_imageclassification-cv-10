@@ -43,7 +43,7 @@ class timmModel(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-def build_model(num_classes, device):
+def build_model(num_classes, device=None):
     model = timm.create_model('efficientnetv2_rw_m', pretrained=True)
     model.classifier = nn.Sequential(
         nn.Linear(2152, 4096),
@@ -54,5 +54,6 @@ def build_model(num_classes, device):
         nn.Dropout(),
         nn.Linear(4096, num_classes),
     )
-    model.to(device)
+    if device:
+        model.to(device)
     return model
