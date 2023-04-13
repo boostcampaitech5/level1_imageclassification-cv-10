@@ -6,6 +6,7 @@ import os
 import random
 import re
 from pathlib import Path
+import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -235,7 +236,7 @@ def train(data_dir, model_dir, args):
                     train_acc = matches / args.batch_size / args.log_interval
                     current_lr = get_lr(optimizer)
                     print(
-                        f"CV Num[{i+1}]/{n_splits} || Epoch[{epoch}/{args.epochs}]({idx + 1}/{len(train_loader)}) || "
+                        f"CV Num[{i+1}/{n_splits}] || Epoch[{epoch+1}/{args.epochs}]({idx + 1}/{len(train_loader)}) || "
                         f"training loss {train_loss:4.4} || training accuracy {train_acc:4.2%} || lr {current_lr}"
                     )
                     logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
@@ -279,8 +280,11 @@ def train(data_dir, model_dir, args):
                     best_val_loss = val_loss
 
                 if val_acc > best_val_acc:
-                    print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model..")
-                    torch.save(model.state_dict(), f"{save_dir}/{i+1}_{epoch:03}_accuracy_{val_acc:4.2%}.pth")
+                    print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model dict..")
+                    best_model = {
+                        "model": copy.deepcopy(model.state_dict()),
+                        "path": f"{save_dir}/{i+1}_{epoch:03}_accuracy_{val_acc:4.2%}.pth"
+                    }
                     best_val_acc = val_acc
                     counter = 0
                 else: 
@@ -303,6 +307,7 @@ def train(data_dir, model_dir, args):
                 ######################################################    
                     
                 print()
+        torch.save(best_model['model'], best_model['path'])
 
 
 if __name__ == '__main__':
