@@ -5,19 +5,24 @@ import multiprocessing
 import os
 import random
 import re
-from importlib import import_module
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn as nn
+from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from dataset import MaskBaseDataset
-from loss import create_criterion
+from dataset import MaskBaseDataset, BaseAugmentation, AlbumAugmentation
+from model import BaseModel, timmModel
 
+###############################################
+import wandb
+wandb.init(project='resnet-50 pretrained test')
+###############################################
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -85,6 +90,14 @@ def increment_path(path, exist_ok=False):
 def train(data_dir, model_dir, args):
     seed_everything(args.seed)
 
+    ########################################
+    wandb.config = {
+        "learning_rate": args.lr,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size
+    }
+    ########################################
+
     save_dir = increment_path(os.path.join(model_dir, args.name))
 
     # -- settings
@@ -92,19 +105,25 @@ def train(data_dir, model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # -- dataset
-    dataset_module = getattr(import_module("dataset"), args.dataset)  # default: MaskBaseDataset
-    dataset = dataset_module(
+    dataset = MaskBaseDataset(
         data_dir=data_dir,
     )
     num_classes = dataset.num_classes  # 18
 
     # -- augmentation
-    transform_module = getattr(import_module("dataset"), args.augmentation)  # default: BaseAugmentation
-    transform = transform_module(
+    '''
+    transform = BaseAugmentation(
         resize=args.resize,
         mean=dataset.mean,
         std=dataset.std,
     )
+    '''
+    transform = AlbumAugmentation(
+        resize=args.resize,
+        mean=dataset.mean,
+        std=dataset.std,
+    )
+    
     dataset.set_transform(transform)
 
     # -- data_loader
@@ -129,16 +148,13 @@ def train(data_dir, model_dir, args):
     )
 
     # -- model
-    model_module = getattr(import_module("model"), args.model)  # default: BaseModel
-    model = model_module(
-        num_classes=num_classes
-    ).to(device)
+    # model = BaseModel(num_classes=num_classes).to(device)
+    model = timmModel(num_classes=18).to(device)
     model = torch.nn.DataParallel(model)
 
     # -- loss & metric
-    criterion = create_criterion(args.criterion)  # default: cross_entropy
-    opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
-    optimizer = opt_module(
+    criterion = nn.CrossEntropyLoss()
+    optimizer = SGD(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.lr,
         weight_decay=5e-4
@@ -183,7 +199,11 @@ def train(data_dir, model_dir, args):
                 )
                 logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
                 logger.add_scalar("Train/accuracy", train_acc, epoch * len(train_loader) + idx)
-
+                #########################################################
+                wandb.log({
+                    "Train/loss": train_loss, "Train/accuracy": train_acc
+                    }, step=epoch)
+                #########################################################
                 loss_value = 0
                 matches = 0
 
@@ -211,10 +231,8 @@ def train(data_dir, model_dir, args):
 
                 if figure is None:
                     inputs_np = torch.clone(inputs).detach().cpu().permute(0, 2, 3, 1).numpy()
-                    inputs_np = dataset_module.denormalize_image(inputs_np, dataset.mean, dataset.std)
-                    figure = grid_image(
-                        inputs_np, labels, preds, n=16, shuffle=args.dataset != "MaskSplitByProfileDataset"
-                    )
+                    inputs_np = MaskBaseDataset.denormalize_image(inputs_np, dataset.mean, dataset.std)
+                    figure = grid_image(inputs_np, labels, preds, n=16, shuffle=True)
 
             val_loss = np.sum(val_loss_items) / len(val_loader)
             val_acc = np.sum(val_acc_items) / len(val_set)
@@ -231,25 +249,26 @@ def train(data_dir, model_dir, args):
             logger.add_scalar("Val/loss", val_loss, epoch)
             logger.add_scalar("Val/accuracy", val_acc, epoch)
             logger.add_figure("results", figure, epoch)
+            ######################################################
+            wandb.log({
+                    "Val/loss": val_loss, "Val/accuracy": val_acc
+                    }, step=epoch)
+            ######################################################
             print()
 
 
 if __name__ == '__main__':
+    torch.cuda.empty_cache()
     parser = argparse.ArgumentParser()
 
     # Data and model checkpoints directories
     parser.add_argument('--seed', type=int, default=42, help='random seed (default: 42)')
     parser.add_argument('--epochs', type=int, default=1, help='number of epochs to train (default: 1)')
-    parser.add_argument('--dataset', type=str, default='MaskBaseDataset', help='dataset augmentation type (default: MaskBaseDataset)')
-    parser.add_argument('--augmentation', type=str, default='BaseAugmentation', help='data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=list, default=[128, 96], help='resize size for image when training')
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for training (default: 64)')
     parser.add_argument('--valid_batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
-    parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
-    parser.add_argument('--optimizer', type=str, default='SGD', help='optimizer type (default: SGD)')
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
     parser.add_argument('--val_ratio', type=float, default=0.2, help='ratio for validaton (default: 0.2)')
-    parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
