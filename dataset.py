@@ -117,7 +117,7 @@ class MaskBaseDataset(Dataset):
     gender_labels = []
     age_labels = []
 
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.56499439, 0.52669794, 0.5039327), std=(0.62006481, 0.58936805, 0.57014345), val_ratio=0.2):
         self.data_dir = data_dir
         self.mean = mean
         self.std = std
@@ -246,7 +246,7 @@ class MaskMultiDataset(Dataset):
     gender_labels = []
     age_labels = []
 
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.56499439, 0.52669794, 0.5039327), std=(0.62006481, 0.58936805, 0.57014345), val_ratio=0.2):
         self.data_dir = data_dir
         self.mean = mean
         self.std = std
@@ -286,7 +286,7 @@ class MaskMultiDataset(Dataset):
             print("[Warning] Calculating statistics... It can take a long time depending on your CPU machine")
             sums = []
             squared = []
-            for image_path in self.image_paths[:3000]:
+            for image_path in self.image_paths:
                 image = np.array(Image.open(image_path)).astype(np.int32)
                 sums.append(image.mean(axis=(0, 1)))
                 squared.append((image ** 2).mean(axis=(0, 1)))
@@ -365,7 +365,7 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
         구현은 val_ratio 에 맞게 train / val 나누는 것을 이미지 전체가 아닌 사람(profile)에 대해서 진행하여 indexing 을 합니다
         이후 `split_dataset` 에서 index 에 맞게 Subset 으로 dataset 을 분기합니다.
     """
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.56499439, 0.52669794, 0.5039327), std=(0.62006481, 0.58936805, 0.57014345), val_ratio=0.2):
         self.indices = defaultdict(list)
         super().__init__(data_dir, mean, std, val_ratio)
 
@@ -409,7 +409,7 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
         return [Subset(self, indices) for phase, indices in self.indices.items()]
     
 class TestDataset(Dataset):
-    def __init__(self, img_paths, resize, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)):
+    def __init__(self, img_paths, resize, mean=(0.56499439, 0.52669794, 0.5039327), std=(0.62006481, 0.58936805, 0.57014345)):
         self.img_paths = img_paths
         self.transform = Compose([
             Resize(resize, Image.BILINEAR),
