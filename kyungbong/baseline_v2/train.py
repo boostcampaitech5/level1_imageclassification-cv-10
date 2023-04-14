@@ -336,8 +336,8 @@ if __name__ == '__main__':
         wandb.init(
             project="Mask image Classification Competition",
             notes="baseline code",
-            tags=list(vars(args).values()))
-        
+            tags=[str(k) + ':' + str(v) for k, v in vars(args).items()]
+        )
         wandb.run.name = f'{args.model}'
         wandb.run.save()
         
