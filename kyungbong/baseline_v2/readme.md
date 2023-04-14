@@ -16,6 +16,7 @@ if you turn on your wandb, set parameter
 ```
 
 baseline_v2
+```
 └───m2
     ├───{fold}_{epoch}_accuracy_{accuracy}.pth
     ├───{fold}_{epoch}_accuracy_{accuracy}.pth
