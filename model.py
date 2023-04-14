@@ -42,13 +42,13 @@ class efficientnetv2_rw_m_Model(nn.Module):
         super(efficientnetv2_rw_m_Model, self).__init__()
         self.model = timm.create_model('efficientnetv2_rw_m', pretrained=True)
         self.model.classifier = nn.Sequential(
-            nn.Linear(2152, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, num_classes),
+        nn.Linear(2152, 4096),
+        nn.ReLU(True),
+        nn.Dropout(),
+        nn.Linear(4096, 4096),
+        nn.ReLU(True),
+        nn.Dropout(),
+        nn.Linear(4096, num_classes),
         )
 
         self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
@@ -56,7 +56,6 @@ class efficientnetv2_rw_m_Model(nn.Module):
         
         if device:
             self.model.to(device)
-            
     def forward(self, x):
         return self.model(x)
 

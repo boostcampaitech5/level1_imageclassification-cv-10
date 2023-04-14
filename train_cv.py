@@ -8,7 +8,7 @@ import re
 from importlib import import_module
 from pathlib import Path
 import copy
-
+from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -16,7 +16,6 @@ import torch.nn as nn
 from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
 from dataset import MaskBaseDataset
 
@@ -177,7 +176,7 @@ def train(data_dir, model_dir, args):
     
         # -- model
         # model = BaseModel(num_classes=num_classes).to(device)
-        model_module = getattr(import_module("model"), args.model+"_Model")
+        model_module = getattr(import_module("model"), args.model + "_Model")
         model = model_module(num_classes=num_classes, lr=args.lr).to(device)
         # model = torch.nn.DataParallel(model)
 
@@ -189,12 +188,9 @@ def train(data_dir, model_dir, args):
             model.train_params
         )
         scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
-
-        # -- logging
         logger = SummaryWriter(log_dir=save_dir)
         with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
             json.dump(vars(args), f, ensure_ascii=False, indent=4)
-
         for epoch in range(args.epochs):
             # train loop
             model.train()
@@ -227,9 +223,7 @@ def train(data_dir, model_dir, args):
                         f"CV Num[{i+1}/{n_splits}] || Epoch[{epoch+1}/{args.epochs}]({idx + 1}/{len(train_loader)}) || "
                         f"training loss {train_loss:4.4} || training accuracy {train_acc:4.2%} || lr {current_lr}"
                     )
-                    logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
-                    logger.add_scalar("Train/accuracy", train_acc, epoch * len(train_loader) + idx)
-                    
+                   
                     loss_value = 0
                     matches = 0
                     
@@ -272,7 +266,7 @@ def train(data_dir, model_dir, args):
                     print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model dict..")
                     best_model = {
                         "model": copy.deepcopy(model.state_dict()),
-                        "path": f"{save_dir}/{i+1}_{epoch:03}_accuracy_{val_acc:4.2%}.pth"
+                        "path": f"./{save_dir}/{i+1}_{epoch:03}_accuracy_{val_acc:4.2%}.pth"
                     }
                     best_val_acc = val_acc
                     counter = 0
@@ -287,8 +281,6 @@ def train(data_dir, model_dir, args):
                     f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
                     f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
                 )
-                logger.add_scalar("Val/loss", val_loss, epoch)
-                logger.add_scalar("Val/accuracy", val_acc, epoch)
                 print()
                 
                 if args.wdb_on:

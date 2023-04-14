@@ -18,8 +18,6 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from dataset import MaskBaseDataset
-
 from sklearn.model_selection import StratifiedKFold
 
 from loss import create_criterion
@@ -140,7 +138,7 @@ def train(data_dir, model_dir, args):
     dataset = dataset_module(
         data_dir=data_dir,
     )
-    num_classes = dataset.num_classes  # 18
+    # num_classes = dataset.num_classes  # 18
 
     # -- augmentation
     transform_module = getattr(import_module("dataset"), args.augmentation)  # default: BaseAugmentation
@@ -161,13 +159,13 @@ def train(data_dir, model_dir, args):
     patience = 5
     accumulation_steps = 2
 
-    labels = [dataset.encode_multi_class(mask, gender, age) 
-              for mask, gender, age in zip(dataset.mask_labels, dataset.gender_labels, dataset.age_labels)]
+    # labels = [dataset.encode_multi_class(mask, gender, age) for mask, gender, age in zip(dataset.mask_labels, dataset.gender_labels, dataset.age_labels)]
+    labels = np.array([[mask, gender, age] for mask, gender, age in zip(dataset.mask_labels, dataset.gender_labels, dataset.age_labels)])
     
     num_workers = 4
     criterion_name = 'cross_entropy'
 
-    for i, (train_idx, valid_idx) in enumerate(skf.split(dataset.image_paths, labels)):
+    for i, (train_idx, valid_idx) in enumerate(skf.split(dataset.image_paths, labels[:,2])):
 
         best_val_acc = 0
         best_val_loss = np.inf
@@ -178,7 +176,7 @@ def train(data_dir, model_dir, args):
         # -- model
         # model = BaseModel(num_classes=num_classes).to(device)
         model_module = getattr(import_module("model"), args.model+"_Model")
-        model = model_module(num_classes=num_classes, lr=args.lr).to(device)
+        model = model_module(lr=args.lr).to(device)
         # model = torch.nn.DataParallel(model)
 
         # -- loss & metric
@@ -190,11 +188,6 @@ def train(data_dir, model_dir, args):
         )
         scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
 
-        # -- logging
-        logger = SummaryWriter(log_dir=save_dir)
-        with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
-            json.dump(vars(args), f, ensure_ascii=False, indent=4)
-
         for epoch in range(args.epochs):
             # train loop
             model.train()
@@ -202,12 +195,25 @@ def train(data_dir, model_dir, args):
             matches = 0
             for idx, train_batch in enumerate(train_loader):
                 inputs, labels = train_batch
+                
                 inputs = inputs.to(device)
                 labels = labels.to(device)
+                
+                # 3, 2, 3
+                mask_out, gender_out, age_out = model(inputs)
 
-                outs = model(inputs)
-                preds = torch.argmax(outs, dim=-1)
-                loss = criterion(outs, labels)
+                mask_preds = torch.argmax(mask_out, dim=-1)
+                gender_preds = torch.argmax(gender_out, dim=-1)
+                age_preds = torch.argmax(age_out, dim=-1)
+                # 체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크체크
+                print(labels.shape)
+                mask_loss = criterion(mask_out, labels[0])
+                gender_loss = criterion(gender_out, labels[1])
+                age_loss = criterion(age_out, labels[2])
+
+                loss = mask_loss + gender_loss + age_loss
+
+                
 
                 loss.backward()
                 optimizer.step()
@@ -218,7 +224,11 @@ def train(data_dir, model_dir, args):
                     optimizer.zero_grad()
 
                 loss_value += loss.item()
-                matches += (preds == labels).sum().item()
+                matches += (mask_preds == labels[0]).sum().item()
+                matches += (gender_preds == labels[1]).sum().item()
+                matches += (age_preds == labels[2]).sum().item()
+                matches /= 3
+
                 if (idx + 1) % args.log_interval == 0:
                     train_loss = loss_value / args.log_interval
                     train_acc = matches / args.batch_size / args.log_interval
@@ -227,8 +237,6 @@ def train(data_dir, model_dir, args):
                         f"CV Num[{i+1}/{n_splits}] || Epoch[{epoch+1}/{args.epochs}]({idx + 1}/{len(train_loader)}) || "
                         f"training loss {train_loss:4.4} || training accuracy {train_acc:4.2%} || lr {current_lr}"
                     )
-                    logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
-                    logger.add_scalar("Train/accuracy", train_acc, epoch * len(train_loader) + idx)
                     
                     loss_value = 0
                     matches = 0
@@ -252,11 +260,23 @@ def train(data_dir, model_dir, args):
                     inputs = inputs.to(device)
                     labels = labels.to(device)
 
-                    outs = model(inputs)
-                    preds = torch.argmax(outs, dim=-1)
+                    # 3, 2, 3
+                    mask_out, gender_out, age_out = model(inputs)
 
-                    loss_item = criterion(outs, labels).item()
-                    acc_item = (labels == preds).sum().item()
+                    mask_preds = torch.argmax(mask_out, dim=-1)
+                    gender_preds = torch.argmax(gender_out, dim=-1)
+                    age_preds = torch.argmax(age_out, dim=-1)
+
+                    mask_item = criterion(mask_out, labels[0]).item()
+                    gender_item = criterion(gender_out, labels[1]).item()
+                    age_item = criterion(age_out, labels[2]).item()
+                    loss_item = mask_item + gender_item + age_item
+
+                    acc_item = (labels[0] == mask_preds).sum().item()
+                    acc_item += (labels[1] == gender_preds).sum().item()
+                    acc_item += (labels[2] == age_preds).sum().item()
+                    acc_item /= 3
+
                     val_loss_items.append(loss_item)
                     val_acc_items.append(acc_item)
 
@@ -287,8 +307,6 @@ def train(data_dir, model_dir, args):
                     f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
                     f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
                 )
-                logger.add_scalar("Val/loss", val_loss, epoch)
-                logger.add_scalar("Val/accuracy", val_acc, epoch)
                 print()
                 
                 if args.wdb_on:
