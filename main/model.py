@@ -121,3 +121,59 @@ class MyModel(nn.Module):
         2. 결과로 나온 output 을 return 해주세요
         """
         return x
+
+class Identity(nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+        
+    def forward(self, x):
+        return x
+    
+class multi_efficientnetv2_rw_m_Model(nn.Module):
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_efficientnetv2_rw_m_Model, self).__init__()
+        self.model = timm.create_model('efficientnetv2_rw_m', pretrained=True)
+        self.model.classifier = Identity()
+        # mask
+        self.fc1 = nn.Sequential(
+            nn.Linear(2152, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )
+        # gender
+        self.fc2 = nn.Sequential(
+            nn.Linear(2152, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 2),
+        )
+        # age
+        self.fc3 = nn.Sequential(
+            nn.Linear(2152, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                            {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                            {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                            {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        # mask, gender, age
+        return self.fc1(x), self.fc2(x), self.fc3(x)

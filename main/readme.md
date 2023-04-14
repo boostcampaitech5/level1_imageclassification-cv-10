@@ -8,14 +8,20 @@ based on baseline_v2
 ## Train (Stratified K-Fold Train)
 ---
 ```
-python train.py --augmentation AlbumAugmentation --model tf_efficientnet_b7 --criterion focal --name {name} --log_interval 30 --optimizer Adam --epochs 10
+python train.py --augmentation AlbumAugmentation --model efficientnetv2_rw_m --criterion focal --name {name} --log_interval 30 --optimizer Adam --epochs 10
 ```
-### wandb
+### To use `wandb`
 if you turn on your wandb, set parameter 
 ```
 --wdb_on True
 ```
-your `--model` tag set `wandb.run.name`
+you can set wandb name
+
+`--model {tag}`  
+Example case, tag='efficientnetv2_rw_m'
+
+`wandb.run.name = {tag}` 
+
 
 ```
 baseline_v2
@@ -30,7 +36,7 @@ baseline_v2
 ## Inference (make output.csv) 
 ---
 ```
-python inference.py --model tf_efficientnet_b7 --model_dir model/{name}
+python inference.py --model efficientnetv2_rw_m --model_dir model/{name}
 ```
 
 you can see terminal message
