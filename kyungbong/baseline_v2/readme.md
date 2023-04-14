@@ -10,14 +10,16 @@ based on baseline_v2
 ```
 python train.py --augmentation AlbumAugmentation --model tf_efficientnet_b7 --criterion focal --name {name} --log_interval 30 --optimizer Adam --epochs 10
 ```
+### wandb
 if you turn on your wandb, set parameter 
 ```
 --wdb_on True
 ```
+your `--model` tag set `wandb.run.name`
 
-baseline_v2
 ```
-└───m2
+baseline_v2
+└───{name}
     ├───{fold}_{epoch}_accuracy_{accuracy}.pth
     ├───{fold}_{epoch}_accuracy_{accuracy}.pth
     ├───{fold}_{epoch}_accuracy_{accuracy}.pth
