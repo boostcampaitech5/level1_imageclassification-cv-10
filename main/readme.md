@@ -5,12 +5,12 @@ author: Kyungbong Lee
 
 based on baseline_v2
 
-## Train (Stratified K-Fold Train)
+## 1. Train (Stratified K-Fold Train)
 ---
 ```
 python train.py --augmentation AlbumAugmentation --model efficientnetv2_rw_m --criterion focal --name {name} --log_interval 30 --optimizer Adam --epochs 10
 ```
-### To use `wandb`
+### 1-1. To use `wandb`
 if you turn on your wandb, set parameter 
 ```
 --wdb_on True
@@ -23,17 +23,8 @@ Example case, tag='efficientnetv2_rw_m'
 `wandb.run.name = {tag}` 
 
 
-```
-baseline_v2
-└───{name}
-    ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-    ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-    ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-    ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-    └───{fold}_{epoch}_accuracy_{accuracy}.pth
-```
 
-## Inference (make output.csv) 
+## 2. Inference (make output.csv) 
 ---
 ```
 python inference.py --model efficientnetv2_rw_m --model_dir model/{name}
@@ -42,4 +33,24 @@ python inference.py --model efficientnetv2_rw_m --model_dir model/{name}
 you can see terminal message
 ```
 Inference Done! Inference result saved at ./output/output.csv
+```
+
+## 3. dir structure
+---
+```
+main
+├───train.py
+├───loss.py
+├───model.py
+├───dataset.py
+├───inference.py    
+├───output
+│     └───output.csv
+└───model
+     └───{name}
+          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
+          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
+          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
+          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
+          └───{fold}_{epoch}_accuracy_{accuracy}.pth
 ```
