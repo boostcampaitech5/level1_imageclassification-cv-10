@@ -35,17 +35,13 @@ class BaseModel(nn.Module):
         x = x.view(-1, 128)
         return self.fc(x)
 
-class timmModel(nn.Module):
-    def __init__(self, num_classes):
-        super(timmModel, self).__init__()
-        self.model = timm.create_model('resnet50', pretrained=True, num_classes=num_classes)
 
-    def forward(self, x):
-        return self.model(x)
 
-def build_model(num_classes, device=None):
-    model = timm.create_model('efficientnetv2_rw_m', pretrained=True)
-    model.classifier = nn.Sequential(
+class efficientnetv2_rw_m_Model(nn.Module):
+    def __init__(self, num_classes, device=None, lr=1e-3):
+        super(efficientnetv2_rw_m_Model, self).__init__()
+        self.model = timm.create_model('efficientnetv2_rw_m', pretrained=True)
+        self.model.classifier = nn.Sequential(
         nn.Linear(2152, 4096),
         nn.ReLU(True),
         nn.Dropout(),
@@ -53,10 +49,60 @@ def build_model(num_classes, device=None):
         nn.ReLU(True),
         nn.Dropout(),
         nn.Linear(4096, num_classes),
-    )
-    if device:
-        model.to(device)
-    return model
+        )
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                    {'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        return self.model(x)
+
+class resnet101d_Model(nn.Module):
+    def __init__(self, num_classes, device=None, lr=1e-3):
+        super(resnet101d_Model, self).__init__()
+        self.model = timm.create_model('resnet101d', pretrained=True)
+        self.model.classifier = nn.Sequential(
+        nn.Linear(1000, 4096),
+        nn.ReLU(True),
+        nn.Dropout(),
+        nn.Linear(4096, 4096),
+        nn.ReLU(True),
+        nn.Dropout(),
+        nn.Linear(4096, num_classes),
+    )   
+        self.train_params = [{'params': getattr(self.model, 'layer1').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                            {'params': getattr(self.model, 'layer2').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                            {'params': getattr(self.model, 'layer3').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                            {'params': getattr(self.model, 'layer4').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                            {'params': getattr(self.model, 'fc').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                            {'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        return self.model(x)
+    
+class tf_efficientnet_b7_Model(nn.Module):
+    def __init__(self, num_classes, device=None, lr=1e-3):
+        super(tf_efficientnet_b7_Model, self).__init__()
+        self.model = timm.create_model('tf_efficientnet_b7', pretrained=True)
+        self.model.classifier = nn.Sequential(
+        nn.Linear(2560, 4096),
+        nn.ReLU(True),
+        nn.Dropout(),
+        nn.Linear(4096, 4096),
+        nn.ReLU(True),
+        nn.Dropout(),
+        nn.Linear(4096, num_classes),
+    )   
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                    {'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        return self.model(x)
+    
 
 # Custom Model Template
 class MyModel(nn.Module):

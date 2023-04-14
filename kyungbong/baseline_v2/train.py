@@ -19,22 +19,12 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from dataset import MaskBaseDataset
-from model import BaseModel, timmModel, build_model
 
 from sklearn.model_selection import StratifiedKFold
 
 from loss import create_criterion
-
-###############################################
 import wandb
-wandb.init(
-  project="mission7 tutorial",
-  notes="baseline code",
-  tags=["accuracy", "Adam"]
-)
-wandb.run.name = f'efficientnetv2_rw_m'
-wandb.run.save()
-###############################################
+
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -129,15 +119,16 @@ def getDataloader(dataset, train_idx, valid_idx, batch_size, num_workers):
 
 def train(data_dir, model_dir, args):
     seed_everything(args.seed)
-    ########################################
-    wandb.config = {
-        "name": args.name,
-        "input_size": args.resize,
-        "learning_rate": args.lr,
-        "epochs": args.epochs,
-        "batch_size": args.batch_size
-    }
-    ########################################
+
+    if args.wdb_on:
+        wandb.config = {
+            "name": args.name,
+            "input_size": args.resize,
+            "learning_rate": args.lr,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size
+        }
+    
     save_dir = increment_path(os.path.join(model_dir, args.name))
 
     # -- settings
@@ -186,18 +177,16 @@ def train(data_dir, model_dir, args):
     
         # -- model
         # model = BaseModel(num_classes=num_classes).to(device)
-        model = build_model(num_classes=num_classes, device=device)
+        model_module = getattr(import_module("model"), args.model+"_Model")
+        model = model_module(num_classes=num_classes, lr=args.lr).to(device)
         # model = torch.nn.DataParallel(model)
 
         # -- loss & metric
         criterion = create_criterion(args.criterion) 
         opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
-        
-        # resnet101d일때는 blocks 대신 layer1234, fc 
-        train_params = [{'params': getattr(model, 'blocks').parameters(), 'lr': args.lr / 10, 'weight_decay':5e-4},
-                    {'params': getattr(model, 'classifier').parameters(), 'lr': args.lr, 'weight_decay':5e-4}]
+           
         optimizer = opt_module(
-            train_params
+            model.train_params
         )
         scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
 
@@ -243,11 +232,12 @@ def train(data_dir, model_dir, args):
                     
                     loss_value = 0
                     matches = 0
-                    #########################################################
-                    wandb.log({
-                        f"{i+1}fold Train/loss": train_loss, f"{i+1}fold Train/accuracy": train_acc
-                    })
-                    #########################################################
+                    
+                    if args.wdb_on:
+                        wandb.log({
+                            f"{i+1}fold Train/loss": train_loss, f"{i+1}fold Train/accuracy": train_acc
+                        })
+                    
             scheduler.step()
 
             # val loop
@@ -300,11 +290,12 @@ def train(data_dir, model_dir, args):
                 logger.add_scalar("Val/loss", val_loss, epoch)
                 logger.add_scalar("Val/accuracy", val_acc, epoch)
                 print()
-                ######################################################
-                wandb.log({
-                    f"{i+1}fold Val/loss": val_loss, f"{i+1}fold Val/accuracy": val_acc
-                })
-                ######################################################    
+                
+                if args.wdb_on:
+                    wandb.log({
+                        f"{i+1}fold Val/loss": val_loss, f"{i+1}fold Val/accuracy": val_acc
+                    })
+                  
                     
                 
         torch.save(best_model['model'], best_model['path'])
@@ -319,7 +310,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=1, help='number of epochs to train (default: 1)')
     parser.add_argument('--dataset', type=str, default='MaskBaseDataset', help='dataset augmentation type (default: MaskBaseDataset)')
     parser.add_argument('--augmentation', type=str, default='BaseAugmentation', help='data augmentation type (default: BaseAugmentation)')
-    parser.add_argument("--resize", nargs="+", type=list, default=[128, 96], help='resize size for image when training')
+    parser.add_argument("--resize", nargs="+", type=int, default=[128, 96], help='resize size for image when training')
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for training (default: 64)')
     parser.add_argument('--valid_batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
@@ -330,14 +321,26 @@ if __name__ == '__main__':
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
+    parser.add_argument('--wdb_on', type=bool, default=False, help='turn on wandb(if you set True)')
+    # loss 말고 acc, f1 선택할 수 있는 기능
+    
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './model'))
 
     args = parser.parse_args()
-    print(args)
 
+    print(args)
+    if args.wdb_on:
+        wandb.init(
+            project="Mask image Classification Competition",
+            notes="baseline code",
+            tags=list(vars(args).values()))
+        
+        wandb.run.name = f'{args.model}'
+        wandb.run.save()
+        
     data_dir = args.data_dir
     model_dir = args.model_dir
 
