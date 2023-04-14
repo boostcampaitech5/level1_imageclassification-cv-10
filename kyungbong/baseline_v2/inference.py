@@ -11,7 +11,8 @@ from dataset import TestDataset, MaskBaseDataset
 import numpy as np
 
 def load_model(saved_model, num_classes, device):
-    model_cls = getattr(import_module("model"), args.model)
+    model_cls = getattr(import_module("model"), args.model+"_Model")
+    
     model = model_cls(
         num_classes=num_classes
     )
