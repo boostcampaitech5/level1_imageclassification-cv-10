@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import random
 import re
+from importlib import import_module
 from pathlib import Path
 import copy
 
@@ -17,7 +18,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from dataset import MaskBaseDataset, BaseAugmentation, AlbumAugmentation
+from dataset import MaskBaseDataset
 from model import BaseModel, timmModel, build_model
 
 from sklearn.model_selection import StratifiedKFold
@@ -144,36 +145,29 @@ def train(data_dir, model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # -- dataset
-    dataset = MaskBaseDataset(
+    dataset_module = getattr(import_module("dataset"), args.dataset)  # default: MaskBaseDataset
+    dataset = dataset_module(
         data_dir=data_dir,
     )
     num_classes = dataset.num_classes  # 18
 
     # -- augmentation
-    '''
-    transform = BaseAugmentation(
-        resize=args.resize,
-        mean=dataset.mean,
-        std=dataset.std,
-    )
-    '''
-    transform = AlbumAugmentation(
+    transform_module = getattr(import_module("dataset"), args.augmentation)  # default: BaseAugmentation
+    transform = transform_module(
         resize=args.resize,
         mean=dataset.mean,
         std=dataset.std,
     )
     
+    
     dataset.set_transform(transform)
-
-
-
 
     # 추가, stratified KFold Cross Validation 
     n_splits = 5
     skf = StratifiedKFold(n_splits=n_splits)
 
     counter = 0
-    patience = 10
+    patience = 5
     accumulation_steps = 2
 
     labels = [dataset.encode_multi_class(mask, gender, age) 
@@ -196,10 +190,15 @@ def train(data_dir, model_dir, args):
         # model = torch.nn.DataParallel(model)
 
         # -- loss & metric
-        criterion = create_criterion(criterion_name)
+        criterion = create_criterion(args.criterion) 
+        opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
+        
+        # resnet101d일때는 blocks 대신 layer1234, fc 
         train_params = [{'params': getattr(model, 'blocks').parameters(), 'lr': args.lr / 10, 'weight_decay':5e-4},
                     {'params': getattr(model, 'classifier').parameters(), 'lr': args.lr, 'weight_decay':5e-4}]
-        optimizer = Adam(train_params)
+        optimizer = opt_module(
+            train_params
+        )
         scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
 
         # -- logging
@@ -241,14 +240,14 @@ def train(data_dir, model_dir, args):
                     )
                     logger.add_scalar("Train/loss", train_loss, epoch * len(train_loader) + idx)
                     logger.add_scalar("Train/accuracy", train_acc, epoch * len(train_loader) + idx)
+                    
+                    loss_value = 0
+                    matches = 0
                     #########################################################
                     wandb.log({
                         f"{i+1}fold Train/loss": train_loss, f"{i+1}fold Train/accuracy": train_acc
-                    }, step=epoch)
+                    })
                     #########################################################
-                    loss_value = 0
-                    matches = 0
-
             scheduler.step()
 
             # val loop
@@ -300,13 +299,14 @@ def train(data_dir, model_dir, args):
                 )
                 logger.add_scalar("Val/loss", val_loss, epoch)
                 logger.add_scalar("Val/accuracy", val_acc, epoch)
+                print()
                 ######################################################
                 wandb.log({
                     f"{i+1}fold Val/loss": val_loss, f"{i+1}fold Val/accuracy": val_acc
-                }, step=epoch)
+                })
                 ######################################################    
                     
-                print()
+                
         torch.save(best_model['model'], best_model['path'])
 
 
@@ -317,11 +317,16 @@ if __name__ == '__main__':
     # Data and model checkpoints directories
     parser.add_argument('--seed', type=int, default=42, help='random seed (default: 42)')
     parser.add_argument('--epochs', type=int, default=1, help='number of epochs to train (default: 1)')
+    parser.add_argument('--dataset', type=str, default='MaskBaseDataset', help='dataset augmentation type (default: MaskBaseDataset)')
+    parser.add_argument('--augmentation', type=str, default='BaseAugmentation', help='data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=list, default=[128, 96], help='resize size for image when training')
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for training (default: 64)')
     parser.add_argument('--valid_batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
+    parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
+    parser.add_argument('--optimizer', type=str, default='SGD', help='optimizer type (default: SGD)')
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
     parser.add_argument('--val_ratio', type=float, default=0.2, help='ratio for validaton (default: 0.2)')
+    parser.add_argument('--criterion', type=str, default='cross_entropy', help='criterion type (default: cross_entropy)')
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
