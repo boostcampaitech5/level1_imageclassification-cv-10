@@ -1,7 +1,7 @@
 # level1_imageclassification-cv-10
 level1_imageclassification-cv-10 created by GitHub Classroom
 
-author: Kyungbong Lee 
+Readme author: Kyungbong Lee 
 
 based on baseline_v2
 
