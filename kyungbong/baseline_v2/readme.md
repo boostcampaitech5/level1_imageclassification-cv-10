@@ -12,7 +12,7 @@ python train.py --augmentation AlbumAugmentation --model tf_efficientnet_b7 --cr
 ```
 if you turn on your wandb, set parameter 
 ```
---wdb_on True
+--wdb_on 
 ```
 
 baseline_v2
