@@ -10,7 +10,12 @@ from pathlib import Path
 import copy
 
 import matplotlib.pyplot as plt
+import plotly.offline 
 import numpy as np
+import pandas as pd
+import seaborn as sn
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
+
 import torch
 import torch.nn as nn
 from torch.optim import SGD, Adam
@@ -24,6 +29,12 @@ import wandb
 
 # -- task
 task_dict = {'default': 18, 'mask': 3, 'gender': 2, 'age': 3}
+
+# -- confusion 
+class_dict = {'mask': ['Wear', 'Incorrect', 'Not Wear'], 'gender': ['Male', 'Female'], 'age': ['< 30', '>= 30 and < 60', '>= 60']}
+
+# -- evaluation
+eval_dict = {'accuracy': lambda preds, labels: accuracy_score(preds, labels), 'f1': lambda preds, labels: f1_score(preds, labels, average='weighted')}
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -187,7 +198,7 @@ def train(data_dir, model_dir, args):
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
     ## 수정금지 ##
 
-    best_val_acc = 0
+    best_val_evaluation = 0
     best_val_loss = np.inf
     patience = 5
     counter = 0
@@ -216,63 +227,84 @@ def train(data_dir, model_dir, args):
             optimizer.step()
 
             loss_value += loss.item()
-            matches += (preds == labels).sum().item()
+            matches += eval_dict[args.evaluation](preds.data.cpu(), labels.data.cpu())
             if (idx + 1) % args.log_interval == 0:
                 train_loss = loss_value / args.log_interval
-                train_acc = matches / args.batch_size / args.log_interval
+                train_evaluation = matches / args.log_interval
                 current_lr = get_lr(optimizer)
                 print(
-                    f"Epoch[{epoch+1}/{args.epochs}]({idx + 1}/{len(train_loader)}) ||\t"
-                    f"training {args.criterion} loss {train_loss:4.4} ||\ttraining accuracy {train_acc:4.2%} ||\tlr {current_lr}"
+                    f"Epoch[{epoch+1}/{args.epochs}] ({idx + 1}/{len(train_loader)})\t|| "
+                    f"training {args.criterion} loss {train_loss:4.4}\t|| training {args.evaluation} {train_evaluation:4.2%}\t|| lr {current_lr}"
                 )
                 
                 if args.wdb_on:
                     wandb.log({
-                        f"Train/{args.criterion} loss": train_loss, "Train/accuracy": train_acc})
+                        f"Train/{args.criterion} loss": train_loss, f"Train/{args.evaluation}": train_evaluation})
                 
                 loss_value = 0
                 matches = 0
 
         scheduler.step()
 
+        # --confusion matrix
+        if args.confusion:
+            pred_conf_item = []
+            label_conf_item = []
         # val loop
         with torch.no_grad():
             print("Calculating validation results...")
             model.eval()
             val_loss_items = []
-            val_acc_items = []
+            val_evaluation_items = []
             figure = None
 
             for val_batch in val_loader:
                 inputs, labels = val_batch
-                labels = decode_func(labels)
+                labels = decode_func(labels)        # torch.Tensor([0, 1, 1, 1, 0, 0, 2, 0... ])
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
-                outs = model(inputs)
-                preds = torch.argmax(outs, dim=-1)
+                outs = model(inputs)                
+                preds = torch.argmax(outs, dim=-1)  # torch.Tensor([0, 1, 2, 0, 0, 0, 2, 0... ])
 
                 loss_item = criterion(outs, labels).item()
-                acc_item = (labels == preds).sum().item()
+                evaluation_item = eval_dict[args.evaluation](preds.data.cpu(), labels.data.cpu())
+                print(evaluation_item)
+                if args.confusion:
+                    pred_conf_item.extend(preds.data.cpu().numpy())
+                    label_conf_item.extend(labels.data.cpu().numpy())
+
                 val_loss_items.append(loss_item)
-                val_acc_items.append(acc_item)
+                val_evaluation_items.append(evaluation_item)
 
                 if figure is None:
                     inputs_np = torch.clone(inputs).detach().cpu().permute(0, 2, 3, 1).numpy()
-                    inputs_np = MaskBaseDataset.denormalize_image(inputs_np, dataset.mean, dataset.std)
-                    figure = grid_image(inputs_np, labels, preds, n=16, shuffle=True)
-
+                    inputs_np = dataset_module.denormalize_image(inputs_np, dataset.mean, dataset.std)
+                    figure = grid_image(
+                        inputs_np, labels, preds, n=16, shuffle=args.dataset != "MaskSplitByProfileDataset"
+                    )
+            if args.confusion:
+                
+                conf_matrix = confusion_matrix(label_conf_item, pred_conf_item)
+                df_cm = pd.DataFrame(conf_matrix / np.sum(conf_matrix, axis=1)[:, None], 
+                                     index = [i for i in class_dict[args.task]], columns = [i for i in class_dict[args.task]])
+                plt.subplots(figsize = (12,7))
+                s = sn.heatmap(data=df_cm, annot=True, cmap='Reds', xticklabels=df_cm.columns, yticklabels=df_cm.columns)
+                if args.wdb_on:
+                    wandb.log({
+                        "Confusion Matrix": wandb.Image(plt)})
+                print(df_cm)
             val_loss = np.sum(val_loss_items) / len(val_loader)
-            val_acc = np.sum(val_acc_items) / len(val_set)
+            val_evaluation = np.sum(val_evaluation_items) / len(val_evaluation_items)
             best_val_loss = min(best_val_loss, val_loss)
 
-            if val_acc > best_val_acc:
-                print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model dict..")
+            if val_evaluation > best_val_evaluation:
+                print(f"New best model for val {args.evaluation} : {val_evaluation:4.2%}! saving the best model dict..")
                 best_model = {
                         "model": copy.deepcopy(model.state_dict()),
-                        "path": f"./{save_dir}/{epoch:03}_accuracy_{val_acc:4.2%}.pth"
+                        "path": f"./{save_dir}/{epoch:03}_{args.evaluation}_{val_evaluation:4.2%}.pth"
                     }
-                best_val_acc = val_acc
+                best_val_evaluation = val_evaluation
                 counter = 0
             else:
                 counter += 1
@@ -282,13 +314,14 @@ def train(data_dir, model_dir, args):
                 break
             
             print(
-                f"[Val] acc : {val_acc:4.2%}, {args.criterion} loss: {val_loss:4.2} ||\t"
-                f"best acc : {best_val_acc:4.2%}, best {args.criterion} loss: {best_val_loss:4.2}"
+                f"[Val] {args.evaluation} : {val_evaluation:4.2%}, {args.criterion} loss: {val_loss:4.2}\t|| "
+                f"best {args.evaluation} : {best_val_evaluation:4.2%}, best {args.criterion} loss: {best_val_loss:4.2}"
             )
             if args.wdb_on:
                 wandb.log({
-                        f"Val/ {args.criterion} loss": val_loss, "Val/accuracy": val_acc
+                        f"Val/ {args.criterion} loss": val_loss, f"Val/{args.evaluation}": val_evaluation
                         })
+                
             
             print()
 
@@ -317,7 +350,9 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
     parser.add_argument('--wdb_on', type=bool, default=False, help='turn on wandb(if you set True)')
     parser.add_argument('--task', type=str, default='default', help='select task you want(default: default) ex: [mask, gender, age]')
+    parser.add_argument('--confusion', type=bool, default=False, help='make confusion matrix about each task, logging on wandb')
     # loss 말고 acc, f1 선택할 수 있는 기능
+    parser.add_argument('--evaluation', type=str, default='accuracy', help='set evaluation function (accuracy, f1)')
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
@@ -325,11 +360,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     print(args)
-
+    assert not ((args.confusion == True) and (args.task == 'default')), 'confusion and default can\'t exist at the same project'
     if args.wdb_on:
         wandb.init(
             project="Mask image Classification Competition",
-            notes="mask, gender, age 각각의 single task 탐구",
+            notes="Confusion Matrix 확인, callback condition F1 score 적용 logging",
             config={
                 "img_size": args.resize,
                 "loss": args.criterion,
