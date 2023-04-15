@@ -293,6 +293,8 @@ def train(data_dir, model_dir, args):
                 if args.wdb_on:
                     wandb.log({
                         "Confusion Matrix": wandb.Image(plt)})
+                plt.close('all')
+                plt.clf()
                 print(df_cm)
             val_loss = np.sum(val_loss_items) / len(val_loader)
             val_evaluation = np.sum(val_evaluation_items) / len(val_evaluation_items)
