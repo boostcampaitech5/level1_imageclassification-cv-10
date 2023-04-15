@@ -222,13 +222,13 @@ def train(data_dir, model_dir, args):
                 train_acc = matches / args.batch_size / args.log_interval
                 current_lr = get_lr(optimizer)
                 print(
-                    f"Epoch[{epoch+1}/{args.epochs}]({idx + 1}/{len(train_loader)}) || "
-                    f"training loss {train_loss:4.4} || training accuracy {train_acc:4.2%} || lr {current_lr}"
+                    f"Epoch[{epoch+1}/{args.epochs}]({idx + 1}/{len(train_loader)}) ||\t"
+                    f"training {args.criterion} loss {train_loss:4.4} ||\ttraining accuracy {train_acc:4.2%} ||\tlr {current_lr}"
                 )
                 
                 if args.wdb_on:
                     wandb.log({
-                        "Train/loss": train_loss, "Train/accuracy": train_acc})
+                        f"Train/{args.criterion} loss": train_loss, "Train/accuracy": train_acc})
                 
                 loss_value = 0
                 matches = 0
@@ -282,12 +282,12 @@ def train(data_dir, model_dir, args):
                 break
             
             print(
-                f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
-                f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
+                f"[Val] acc : {val_acc:4.2%}, {args.criterion} loss: {val_loss:4.2} ||\t"
+                f"best acc : {best_val_acc:4.2%}, best {args.criterion} loss: {best_val_loss:4.2}"
             )
             if args.wdb_on:
                 wandb.log({
-                        "Val/loss": val_loss, "Val/accuracy": val_acc
+                        f"Val/ {args.criterion} loss": val_loss, "Val/accuracy": val_acc
                         })
             
             print()
@@ -332,6 +332,7 @@ if __name__ == '__main__':
             notes="mask, gender, age 각각의 single task 탐구",
             config={
                 "img_size": args.resize,
+                "loss": args.criterion,
                 "learning_rate": args.lr,
                 "architecture": args.model,
                 "dataset": args.dataset,
