@@ -171,6 +171,9 @@ def train(data_dir, model_dir, args):
 
     # -- loss & metric
     criterion = create_criterion(args.criterion) 
+    if args.criterion == 'f1' or args.criterion == 'label_smoothing':
+        criterion.classes = task_dict[args.task]
+
     opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: Adam
            
     optimizer = opt_module(
