@@ -22,7 +22,8 @@ from loss import create_criterion
 
 import wandb
 
-
+# -- task
+task_dict = {'default': 18, 'mask': 3, 'gender': 2, 'age': 3}
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -124,14 +125,15 @@ def train(data_dir, model_dir, args):
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # -- dataset
-    dataset_module = getattr(import_module("dataset"), args.dataset)  # default: MaskBaseDataset
+    dataset_module = getattr(import_module("dataset"), args.dataset)  # default: MaskSplitByProfileDataset
     dataset = dataset_module(
         data_dir=data_dir,
     )
-    num_classes = dataset.num_classes  # 18
+    
+    num_classes = task_dict[args.task]
 
     # -- augmentation
-    transform_module = getattr(import_module("dataset"), args.augmentation)  # default: BaseAugmentation
+    transform_module = getattr(import_module("dataset"), args.augmentation)  # default: AlbumAugmentation
     transform = transform_module(
         resize=args.resize,
         mean=dataset.mean,
@@ -169,19 +171,25 @@ def train(data_dir, model_dir, args):
 
     # -- loss & metric
     criterion = create_criterion(args.criterion) 
-    opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: SGD
+    opt_module = getattr(import_module("torch.optim"), args.optimizer)  # default: Adam
            
     optimizer = opt_module(
         model.train_params
     )
     scheduler = StepLR(optimizer, args.lr_decay_step, gamma=0.5)
+
+    ## 수정금지 ##
     logger = SummaryWriter(log_dir=save_dir)
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
+    ## 수정금지 ##
+
     best_val_acc = 0
     best_val_loss = np.inf
     patience = 5
     counter = 0
+    # getattr로 decode 함수 가져와서 적용 
+    decode_func = getattr(import_module("dataset"), f"decode_{args.task}_class" )
     for epoch in range(args.epochs):
         # train loop
         model.train()
@@ -189,6 +197,9 @@ def train(data_dir, model_dir, args):
         matches = 0
         for idx, train_batch in enumerate(train_loader):
             inputs, labels = train_batch
+
+            labels = decode_func(labels)
+
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -231,6 +242,7 @@ def train(data_dir, model_dir, args):
 
             for val_batch in val_loader:
                 inputs, labels = val_batch
+                labels = decode_func(labels)
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -301,6 +313,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
     parser.add_argument('--wdb_on', type=bool, default=False, help='turn on wandb(if you set True)')
+    parser.add_argument('--task', type=str, default='default', help='select task you want(default: default) ex: [mask, gender, age]')
     # loss 말고 acc, f1 선택할 수 있는 기능
 
     # Container environment
@@ -313,7 +326,7 @@ if __name__ == '__main__':
     if args.wdb_on:
         wandb.init(
             project="Mask image Classification Competition",
-            notes="프로필 별 train, valid split이 훈련에 어떤 효과를 주는지 탐구",
+            notes="mask, gender, age 각각의 single task 탐구",
             config={
                 "img_size": args.resize,
                 "learning_rate": args.lr,
