@@ -22,7 +22,16 @@ Example case, tag='efficientnetv2_rw_m'
 
 `wandb.run.name = {tag}` 
 
+### 1-2. To Train each single task train
+Set parameter
+```
+--task {task_name}
+```
+task_name:
 
+> 'default': default setting (18 classes)
+
+> 'age' or 'gender' or 'mask': each single task train (each class num)
 
 ## 2. Inference (make output.csv) 
 ---
@@ -48,9 +57,6 @@ main
 │     └───output.csv
 └───model
      └───{name}
-          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-          ├───{fold}_{epoch}_accuracy_{accuracy}.pth
-          └───{fold}_{epoch}_accuracy_{accuracy}.pth
+          └───{epoch}_accuracy_{accuracy}.pth
+          
 ```
