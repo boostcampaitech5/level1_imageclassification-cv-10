@@ -426,3 +426,22 @@ class TestDataset(Dataset):
 
     def __len__(self):
         return len(self.img_paths)
+
+
+def decode_mask_class(multi_class_label) -> torch.Tensor:
+    mask_label = (multi_class_label // 6) % 3
+    return mask_label
+    
+def decode_gender_class(multi_class_label) -> torch.Tensor:
+    mask_label = (multi_class_label // 6) % 3
+    gender_label = (multi_class_label // 3) % 2
+    return gender_label
+   
+def decode_age_class(multi_class_label) -> torch.Tensor:
+    mask_label = (multi_class_label // 6) % 3
+    gender_label = (multi_class_label // 3) % 2
+    age_label = multi_class_label % 3
+    return age_label
+    
+def decode_default_class(multi_class_label) -> torch.Tensor:
+    return multi_class_label
