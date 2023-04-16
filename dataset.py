@@ -445,3 +445,9 @@ def decode_age_class(multi_class_label) -> torch.Tensor:
     
 def decode_default_class(multi_class_label) -> torch.Tensor:
     return multi_class_label
+
+def decode_multi_class(multi_class_label) -> torch.Tensor:
+    mask_label = (multi_class_label // 6) % 3
+    gender_label = (multi_class_label // 3) % 2
+    age_label = multi_class_label % 3
+    return mask_label, gender_label, age_label

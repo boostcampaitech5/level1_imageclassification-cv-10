@@ -18,6 +18,12 @@ python train.py --augmentation AlbumAugmentation \
 --task {default or single task name} \
 --confusion True --wdb_on True --evaluation f1
 ```
+if you want Multitask learning:
+```
+python train_multi.py --model multi_efficientnetv2_rw_m \
+--name {name} --task multi --criterion focal \
+--epochs 20
+```
 
 ### 1-1. To use `wandb`
 if you turn on your wandb, set parameter 
