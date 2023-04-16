@@ -175,7 +175,7 @@ class multi_efficientnetv2_rw_m_Model(nn.Module):
             nn.Linear(4096, 4096),
             nn.ReLU(True),
             nn.Dropout(),
-            nn.Linear(4096, 2),
+            nn.Linear(4096, 1),
         )
         # age
         self.fc3 = nn.Sequential(
@@ -199,7 +199,7 @@ class multi_efficientnetv2_rw_m_Model(nn.Module):
         x = self.model(x)
         
         # mask, gender, age
-        return self.fc1(x), self.fc2(x), self.fc3(x)
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
     
 class multi_vgg19_bn_Model(nn.Module):
     def __init__(self, device=None, lr=1e-3):
