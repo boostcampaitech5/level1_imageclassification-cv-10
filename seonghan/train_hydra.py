@@ -345,7 +345,7 @@ def train(data_dir, model_dir, args):
     #             def encode_multi_class(mask_label, gender_label, age_label) -> int:
     #                 return mask_label * 6 + gender_label * 3 + age_label
                 preds = mask_preds * 6 + gender_preds * 3 + age_preds
-                loss = 0.2 * mask_loss + 0.2 * gender_loss + 0.6 * age_loss
+                loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_los
 
                 mask_matches = eval_dict[args.evaluation](mask_preds.data.cpu(), mask_labels.data.cpu()).item()
                 gender_matches = eval_dict[args.evaluation](gender_preds.data.cpu(), gender_labels.data.cpu()).item()
@@ -461,6 +461,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='MaskSplitByProfileDataset', help='dataset augmentation type (default: MaskSplitByProfileDataset)')
     parser.add_argument('--augmentation', type=str, default='BaseAugmentation', help='data augmentation type (default: BaseAugmentation)')
     parser.add_argument("--resize", nargs="+", type=int, default=[128, 96], help='resize size for image when training')
+    parser.add_argument("--centercrop", nargs="+", type=int, default=[320, 256], help='center crop size for image when training')
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for training (default: 64)')
     parser.add_argument('--valid_batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
