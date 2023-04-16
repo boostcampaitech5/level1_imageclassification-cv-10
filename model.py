@@ -200,3 +200,48 @@ class multi_efficientnetv2_rw_m_Model(nn.Module):
         
         # mask, gender, age
         return self.fc1(x), self.fc2(x), self.fc3(x)
+    
+class multi_vgg19_bn_Model(nn.Module):
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vgg19_bn_Model, self).__init__()
+        self.model = timm.create_model('vgg19_bn', pretrained=True)
+        self.model.head = nn.Flatten()
+        self.fc1 = nn.Sequential(
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'features').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self.model, 'pre_logits').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)

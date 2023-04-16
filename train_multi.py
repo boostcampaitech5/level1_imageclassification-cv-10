@@ -182,6 +182,7 @@ def train(data_dir, model_dir, args):
 
     # -- loss & metric
     criterion = create_criterion(args.criterion) 
+    gender_crierion = nn.BCELoss()
     if args.criterion == 'f1' or args.criterion == 'label_smoothing':
         criterion.classes = task_dict[args.task]
 
@@ -221,12 +222,12 @@ def train(data_dir, model_dir, args):
             mask_outs, gender_outs, age_outs = model(inputs)
 
             mask_preds = torch.argmax(mask_outs, dim=-1)
-            gender_preds = torch.argmax(gender_outs, dim=-1)
+            gender_preds = torch.where(gender_outs <= torch.tensor(0.5), torch.Tensor([0.]).to(device), torch.Tensor([1.]).to(device))
             age_preds = torch.argmax(age_outs, dim=-1)
 
             mask_loss = criterion(mask_outs, mask_labels)
-            gender_loss = criterion(mask_outs, gender_labels)
-            age_loss = criterion(mask_outs, age_labels)
+            gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float())
+            age_loss = criterion(age_outs, age_labels)
 
             loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_loss 
             preds = mask_preds * 6 + gender_preds * 3 + age_preds
@@ -271,7 +272,7 @@ def train(data_dir, model_dir, args):
                 print()
                 if args.wdb_on:
                     wandb.log({
-                        f"total Train/{args.criterion} loss": train_loss, f"Train/{args.evaluation}": train_evaluation,
+                        f"Train/{args.criterion} loss": train_loss, f"Train/{args.evaluation}": train_evaluation,
                         f"mask Train/{args.criterion} loss": mask_train_loss, f"Train/{args.evaluation}": mask_train_evaluation,
                         f"gender Train/{args.criterion} loss": gender_train_loss, f"Train/{args.evaluation}": gender_train_evaluation,
                         f"age Train/{args.criterion} loss": age_train_loss, f"Train/{args.evaluation}": age_train_evaluation})
@@ -315,11 +316,11 @@ def train(data_dir, model_dir, args):
 
                 mask_preds = torch.argmax(mask_outs, dim=-1)
                 age_preds = torch.argmax(age_outs, dim=-1)
-                gender_preds = torch.argmax(gender_outs, dim=-1)
+                gender_preds = torch.where(gender_outs <= torch.tensor(0.5), torch.FloatTensor([0.]).to(device), torch.FloatTensor([1.]).to(device))
 
                 mask_loss = criterion(mask_outs, mask_labels).item()
                 age_loss = criterion(age_outs, age_labels).item()
-                gender_loss = criterion(gender_outs, gender_labels).item()
+                gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float()).item()
 
                 preds = mask_preds * 6 + gender_preds * 3 + age_preds
                 loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_loss
@@ -347,12 +348,6 @@ def train(data_dir, model_dir, args):
                 val_loss_items.append(loss)
                 val_evaluation_items.append(evaluation_item)
 
-                if figure is None:
-                    inputs_np = torch.clone(inputs).detach().cpu().permute(0, 2, 3, 1).numpy()
-                    inputs_np = dataset_module.denormalize_image(inputs_np, dataset.mean, dataset.std)
-                    figure = grid_image(
-                        inputs_np, labels, preds, n=16, shuffle=args.dataset != "MaskSplitByProfileDataset"
-                    )
             if args.confusion:
                 
                 mask_conf_matrix = confusion_matrix(mask_label_conf_item, mask_pred_conf_item)
@@ -428,7 +423,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_batch_size', type=int, default=1000, help='input batch size for validing (default: 1000)')
     parser.add_argument('--model', type=str, default='BaseModel', help='model type (default: BaseModel)')
     parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer type (default: Adam)')
-    parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
+    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate (default: 1e-4)')
     parser.add_argument('--val_ratio', type=float, default=0.2, help='ratio for validaton (default: 0.2)')
     parser.add_argument('--criterion', type=str, default='focal', help='criterion type (default: focal)')
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
@@ -450,7 +445,7 @@ if __name__ == '__main__':
     if args.wdb_on:
         wandb.init(
             project="Mask image Classification Competition(Multi)",
-            notes="Multitask learning 코드 적용, Loss 함수 별 task별 수렴 지점 확인, loss함수에 따른 각 task 수렴 속도 확인",
+            notes="Gender에 BCELoss 적용, 코드 수정",
             config={
                 "img_size": args.resize,
                 "loss": args.criterion,
