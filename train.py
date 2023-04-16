@@ -354,7 +354,7 @@ if __name__ == '__main__':
     parser.add_argument('--task', type=str, default='default', help='select task you want(default: default) ex: [mask, gender, age]')
     parser.add_argument('--confusion', type=bool, default=False, help='make confusion matrix about each task, logging on wandb')
     # loss 말고 acc, f1 선택할 수 있는 기능
-    parser.add_argument('--evaluation', type=str, default='accuracy', help='set evaluation function (accuracy, f1)')
+    parser.add_argument('--evaluation', type=str, default='f1', help='set evaluation function (accuracy, f1)')
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
@@ -366,7 +366,7 @@ if __name__ == '__main__':
     if args.wdb_on:
         wandb.init(
             project="Mask image Classification Competition",
-            notes="Confusion Matrix 확인, callback condition F1 score 적용 logging",
+            notes="age, focal, val-f1",
             config={
                 "img_size": args.resize,
                 "loss": args.criterion,
