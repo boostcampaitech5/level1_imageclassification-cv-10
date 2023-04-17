@@ -312,7 +312,16 @@ def train(data_dir, model_dir, args):
                 labels = labels.to(device)
                 mask_labels, gender_labels, age_labels = decode_func(labels)  
 
-                mask_outs, gender_outs, age_outs = model(inputs)   
+                if args.log_var:
+                    mask_outs, gender_outs, age_outs, log_vars = model(inputs)
+                    precision_mask = torch.exp(-log_vars[0])
+                    precision_age = torch.exp(-log_vars[2])
+                    precision_gender = 0.1
+                else:  
+                    mask_outs, gender_outs, age_outs = model(inputs) 
+                    precision_mask = 0.25
+                    precision_age = 0.5
+                    precision_gender = 0.25 
 
                 mask_preds = torch.argmax(mask_outs, dim=-1)
                 age_preds = torch.argmax(age_outs, dim=-1)
@@ -323,7 +332,7 @@ def train(data_dir, model_dir, args):
                 gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float()).item()
 
                 preds = mask_preds * 6 + gender_preds * 3 + age_preds
-                loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_loss
+                loss = precision_mask * mask_loss + precision_gender * gender_loss + precision_age * age_loss
 
                 mask_matches = eval_dict[args.evaluation](mask_preds.data.cpu(), mask_labels.data.cpu()).item()
                 gender_matches = eval_dict[args.evaluation](gender_preds.data.cpu(), gender_labels.data.cpu()).item()
@@ -435,6 +444,9 @@ if __name__ == '__main__':
     # loss 말고 acc, f1 선택할 수 있는 기능
     parser.add_argument('--evaluation', type=str, default='accuracy', help='set evaluation function (accuracy, f1)')
 
+    # 임시 
+    parser.add_argument('--logvar', type=bool, default=False, help='set logvar')
+    
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './model'))
