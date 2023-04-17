@@ -98,6 +98,7 @@ class tf_efficientnet_b7_Model(nn.Module):
     )   
         self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
                     {'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        
         if device:
             self.model.to(device)
     def forward(self, x):
@@ -177,3 +178,125 @@ class multi_efficientnetv2_rw_m_Model(nn.Module):
         
         # mask, gender, age
         return self.fc1(x), self.fc2(x), self.fc3(x)
+    
+
+class MWR_Model(nn.Module):
+    #망함
+    def __init__(self,num_classes,device=None,lr=1e-3):
+        super(MWR_Model,self).__init__()
+        self.model=timm.create_model('vgg16_bn',pretrained=True)
+        self.model.ClassifierHead=nn.Sequential(
+            nn.AvgPool2d(kernel_size=7),
+            nn.Conv2d(1000, 512, kernel_size=1, stride=1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=1, stride=1),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+            nn.Conv2d(512, num_classes, kernel_size=1, stride=1),
+            nn.Tanh()
+        )
+        
+        self.train_params = [{'params': getattr(self.model, 'features').parameters(), 
+                              'lr': lr / 10, 'weight_decay':5e-4},
+{'params': getattr(self.model, 'pre_logits').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+{'params': getattr(self.model, 'head').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                    {'params': getattr(self.model, 'ClassifierHead').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+    def forward(self,x):
+        x=self.model(x)
+        return x
+class mobilenetv3_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(mobilenetv3_Model,self).__init__()
+        self.model=timm.create_model('mobilenetv3_large_100',pretrained=True)
+        self.model.classifier=nn.Sequential(
+            nn.Linear(1280, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, num_classes),
+        )
+        self.train_params = [{'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+    
+class resnet18_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(resnet18_Model,self).__init__()
+        self.model=timm.create_model('resnet18',pretrained=True)
+        self.model.fc=nn.Linear(512,num_classes)
+        
+        self.train_params = [{'params': getattr(self.model, 'fc').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+class efficientnet_lite0_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(efficientnet_lite0_Model,self).__init__()
+        self.model=timm.create_model('efficientnet_lite0',pretrained=True)
+        self.model.classifier=nn.Linear(1280,num_classes)
+        
+        self.train_params = [{'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+        
+class vit_base_patch16_224_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(vit_base_patch16_224_Model,self).__init__()
+        self.model=timm.create_model('vit_base_patch16_224',pretrained=True)
+        
+        self.model.head=nn.Linear(768,num_classes)
+        
+        self.train_params = [{'params': getattr(self.model, 'head').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+class swin_tiny_patch4_window7_224_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(swin_tiny_patch4_window7_224_Model,self).__init__()
+        self.model=timm.create_model('swin_tiny_patch4_window7_224',pretrained=True)
+        
+        self.model.head=nn.Linear(768,num_classes)
+    
+        self.train_params = [{'params': getattr(self.model, 'head').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+    
+class tf_efficientnet_lite4_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(tf_efficientnet_lite4_Model,self).__init__()
+        self.model=timm.create_model('tf_efficientnet_lite4',pretrained=True)
+        
+        self.model.classifier=nn.Linear(1280,num_classes)
+    
+        self.train_params = [{'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+    
+class vgg19_bn_Model(nn.Module):
+    def __init__(self, num_classes,device=None,lr=1e-3):
+        super(vgg19_bn_Model,self).__init__()
+        self.model=timm.create_model('vgg19_bn',pretrained=True)
+        
+        self.model.head=nn.Sequential(
+            self.model.head.global_pool,
+            nn.Linear(4096,num_classes)
+        )
+        self.train_params = [{'params': getattr(self.model, 'head').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self,x):
+        return self.model(x)
+
+ 
