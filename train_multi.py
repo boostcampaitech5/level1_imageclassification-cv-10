@@ -222,7 +222,7 @@ def train(data_dir, model_dir, args):
                 mask_outs, gender_outs, age_outs, log_vars = model(inputs)
                 precision_mask = torch.exp(-log_vars[0])
                 precision_age = torch.exp(-log_vars[2])
-                precision_gender = 0.1
+                precision_gender = torch.exp(-log_vars[0])
             else:
                 mask_outs, gender_outs, age_outs = model(inputs)
                 precision_mask = 0.25
@@ -237,7 +237,7 @@ def train(data_dir, model_dir, args):
             gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float())
             age_loss = criterion(age_outs, age_labels)
 
-            loss = precision_mask * mask_loss + precision_gender * gender_loss + precision_age * age_loss 
+            loss = (precision_mask * mask_loss + log_vars[0]) + (precision_gender * gender_loss + log_vars[0]) + (precision_age * age_loss + log_vars[2])
             preds = mask_preds * 6 + gender_preds * 3 + age_preds
 
             loss.backward()
@@ -324,7 +324,7 @@ def train(data_dir, model_dir, args):
                     mask_outs, gender_outs, age_outs, log_vars = model(inputs)
                     precision_mask = torch.exp(-log_vars[0])
                     precision_age = torch.exp(-log_vars[2])
-                    precision_gender = 0.1
+                    precision_gender = torch.exp(-log_vars[0])
                 else:  
                     mask_outs, gender_outs, age_outs = model(inputs) 
                     precision_mask = 0.25
@@ -340,7 +340,7 @@ def train(data_dir, model_dir, args):
                 gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float()).item()
 
                 preds = mask_preds * 6 + gender_preds * 3 + age_preds
-                loss = precision_mask * mask_loss + precision_gender * gender_loss + precision_age * age_loss
+                loss = (precision_mask * mask_loss + log_vars[0]) + (precision_gender * gender_loss + log_vars[0]) + (precision_age * age_loss + log_vars[2])
 
                 mask_matches = eval_dict[args.evaluation](mask_preds.data.cpu(), mask_labels.data.cpu()).item()
                 gender_matches = eval_dict[args.evaluation](gender_preds.data.cpu(), gender_labels.data.cpu()).item()
@@ -362,7 +362,7 @@ def train(data_dir, model_dir, args):
                 gender_val_acc_items.append(gender_matches)
                 age_val_loss_items.append(age_loss)
                 age_val_acc_items.append(age_matches)
-                val_loss_items.append(loss)
+                val_loss_items.append(loss.cpu().numpy())
                 val_evaluation_items.append(evaluation_item)
 
             if args.confusion:
@@ -453,7 +453,7 @@ if __name__ == '__main__':
     parser.add_argument('--evaluation', type=str, default='accuracy', help='set evaluation function (accuracy, f1)')
 
     # 임시 
-    parser.add_argument('--logvar', type=bool, default=False, help='set logvar')
+    parser.add_argument('--log_var', type=bool, default=False, help='set logvar')
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
