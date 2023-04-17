@@ -34,7 +34,7 @@ task_dict = {'default': 18, 'mask': 3, 'gender': 2, 'age': 3, 'multi':0}
 class_dict = {'mask': ['Wear', 'Incorrect', 'Not Wear'], 'gender': ['Male', 'Female'], 'age': ['< 30', '>= 30 and < 60', '>= 60']}
 
 # -- evaluation
-eval_dict = {'accuracy': lambda preds, labels: accuracy_score(preds, labels), 'f1': lambda preds, labels: f1_score(preds, labels, average='weighted')}
+eval_dict = {'accuracy': lambda preds, labels: accuracy_score(preds, labels), 'f1': lambda preds, labels: f1_score(preds, labels, average='macro')}
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -316,7 +316,7 @@ def train(data_dir, model_dir, args):
 
                 mask_preds = torch.argmax(mask_outs, dim=-1)
                 age_preds = torch.argmax(age_outs, dim=-1)
-                gender_preds = torch.where(gender_outs <= torch.tensor(0.5), torch.FloatTensor([0.]).to(device), torch.FloatTensor([1.]).to(device))
+                gender_preds = torch.where(gender_outs <= torch.tensor(0.5), torch.tensor([0.]).to(device), torch.tensor([1.]).to(device))
 
                 mask_loss = criterion(mask_outs, mask_labels).item()
                 age_loss = criterion(age_outs, age_labels).item()
@@ -383,7 +383,7 @@ def train(data_dir, model_dir, args):
                 print(f"New best model for val {args.evaluation} : {val_evaluation:4.2%}! saving the best model dict..")
                 best_model = {
                         "model": copy.deepcopy(model.state_dict()),
-                        "path": f"./{save_dir}/{epoch:03}_{args.evaluation}_{val_evaluation:4.2%}.pth"
+                        "path": f"./{save_dir}/{epoch+1:03}_{args.evaluation}_{val_evaluation:4.2%}.pth"
                     }
                 best_val_evaluation = val_evaluation
                 counter = 0
