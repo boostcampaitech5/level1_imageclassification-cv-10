@@ -483,6 +483,6 @@ class logvar_multi_vit_base_patch16_224_Model(nn.Module):
         gender_out = self.fc2(x)
         age_out = self.fc3(x) 
         
-        log_vars = [mask_out.vars(), 0, age_out.vars()]
+        log_vars = [mask_out.var(), 0, age_out.var()]
 
         return mask_out, torch.sigmoid(gender_out), age_out, log_vars 
