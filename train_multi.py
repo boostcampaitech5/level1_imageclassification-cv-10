@@ -218,8 +218,16 @@ def train(data_dir, model_dir, args):
             mask_labels, gender_labels, age_labels = decode_func(labels)
 
             optimizer.zero_grad()
-
-            mask_outs, gender_outs, age_outs = model(inputs)
+            if args.log_var:
+                mask_outs, gender_outs, age_outs, log_vars = model(inputs)
+                precision_mask = torch.exp(-log_vars[0])
+                precision_age = torch.exp(-log_vars[2])
+                precision_gender = 0.1
+            else:
+                mask_outs, gender_outs, age_outs = model(inputs)
+                precision_mask = 0.25
+                precision_age = 0.5
+                precision_gender = 0.25 
 
             mask_preds = torch.argmax(mask_outs, dim=-1)
             gender_preds = torch.where(gender_outs <= torch.tensor(0.5), torch.Tensor([0.]).to(device), torch.Tensor([1.]).to(device))
@@ -229,7 +237,7 @@ def train(data_dir, model_dir, args):
             gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float())
             age_loss = criterion(age_outs, age_labels)
 
-            loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_loss 
+            loss = precision_mask * mask_loss + precision_gender * gender_loss + precision_age * age_loss 
             preds = mask_preds * 6 + gender_preds * 3 + age_preds
 
             loss.backward()
@@ -446,7 +454,7 @@ if __name__ == '__main__':
 
     # 임시 
     parser.add_argument('--logvar', type=bool, default=False, help='set logvar')
-    
+
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR', './model'))
