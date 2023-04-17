@@ -98,7 +98,6 @@ class tf_efficientnet_b7_Model(nn.Module):
     )   
         self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
                     {'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        
         if device:
             self.model.to(device)
     def forward(self, x):
@@ -201,103 +200,6 @@ class multi_efficientnetv2_rw_m_Model(nn.Module):
         
         # mask, gender, age
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
-    
-class mobilenetv3_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(mobilenetv3_Model,self).__init__()
-        self.model=timm.create_model('mobilenetv3_large_100',pretrained=True)
-        self.model.classifier=nn.Sequential(
-            nn.Linear(1280, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, num_classes),
-        )
-        self.train_params = [{'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
-    
-class resnet18_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(resnet18_Model,self).__init__()
-        self.model=timm.create_model('resnet18',pretrained=True)
-        self.model.fc=nn.Linear(512,num_classes)
-        
-        self.train_params = [{'params': getattr(self.model, 'fc').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
-    
-class efficientnet_lite0_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(efficientnet_lite0_Model,self).__init__()
-        self.model=timm.create_model('efficientnet_lite0',pretrained=True)
-        self.model.classifier=nn.Linear(1280,num_classes)
-        
-        self.train_params = [{'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
-        
-class vit_base_patch16_224_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(vit_base_patch16_224_Model,self).__init__()
-        self.model=timm.create_model('vit_base_patch16_224',pretrained=True)
-        
-        self.model.head=nn.Linear(768,num_classes)
-        
-        self.train_params = [{'params': getattr(self.model, 'head').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
-    
-class swin_tiny_patch4_window7_224_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(swin_tiny_patch4_window7_224_Model,self).__init__()
-        self.model=timm.create_model('swin_tiny_patch4_window7_224',pretrained=True)
-        
-        self.model.head=nn.Linear(768,num_classes)
-    
-        self.train_params = [{'params': getattr(self.model, 'head').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
-    
-class tf_efficientnet_lite4_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(tf_efficientnet_lite4_Model,self).__init__()
-        self.model=timm.create_model('tf_efficientnet_lite4',pretrained=True)
-        
-        self.model.classifier=nn.Linear(1280,num_classes)
-    
-        self.train_params = [{'params': getattr(self.model, 'classifier').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
-    
-class vgg19_bn_Model(nn.Module):
-    def __init__(self, num_classes,device=None,lr=1e-3):
-        super(vgg19_bn_Model,self).__init__()
-        self.model=timm.create_model('vgg19_bn',pretrained=True)
-        
-        self.model.head=nn.Sequential(
-            self.model.head.global_pool,
-            nn.Linear(4096,num_classes)
-        )
-        self.train_params = [{'params': getattr(self.model, 'head').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self,x):
-        return self.model(x)
     
 class multi_vgg19_bn_Model(nn.Module):
     def __init__(self, device=None, lr=1e-3):
@@ -435,54 +337,3 @@ class multi_swin_tiny_patch4_window7_224_Model(nn.Module):
         x = self.model(x)
         
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
-    
-class logvar_multi_vit_base_patch16_224_Model(nn.Module):
-    """
-    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
-    """
-    def __init__(self, device=None, lr=1e-3):
-        super(logvar_multi_vit_base_patch16_224_Model, self).__init__()
-        self.model = timm.create_model('vit_base_patch16_224', pretrained=True)
-        self.fc1 = nn.Sequential(
-            nn.Linear(1000, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 3),
-        )   
-        self.fc2 = nn.Sequential(
-            nn.Linear(1000, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 1)
-        )   
-        self.fc3 = nn.Sequential(
-            nn.Linear(1000, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 3),
-        )   
-
-        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
-                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
-                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
-                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
-        if device:
-            self.model.to(device)
-    def forward(self, x):
-        x = self.model(x)
-        mask_out = self.fc1(x)
-        gender_out = self.fc2(x)
-        age_out = self.fc3(x) 
-        
-        log_vars = [mask_out.var(), 0, age_out.var()]
-
-        return mask_out, torch.sigmoid(gender_out), age_out, log_vars 
