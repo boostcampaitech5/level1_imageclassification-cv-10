@@ -83,7 +83,6 @@ def grid_image(np_images, gts, preds, n=16, shuffle=False):
 
 def increment_path(path, exist_ok=False):
     """ Automatically increment path, i.e. runs/exp --> runs/exp0, runs/exp1 etc.
-
     Args:
         path (str or pathlib.Path): f"{model_dir}/{args.name}".
         exist_ok (bool): whether increment path (increment if False).
@@ -218,16 +217,8 @@ def train(data_dir, model_dir, args):
             mask_labels, gender_labels, age_labels = decode_func(labels)
 
             optimizer.zero_grad()
-            if args.log_var:
-                mask_outs, gender_outs, age_outs, log_vars = model(inputs)
-                precision_mask = torch.exp(-log_vars[0])
-                precision_age = torch.exp(-log_vars[2])
-                precision_gender = torch.exp(-log_vars[0])
-            else:
-                mask_outs, gender_outs, age_outs = model(inputs)
-                precision_mask = 0.25
-                precision_age = 0.5
-                precision_gender = 0.25 
+
+            mask_outs, gender_outs, age_outs = model(inputs)
 
             mask_preds = torch.argmax(mask_outs, dim=-1)
             gender_preds = torch.where(gender_outs <= torch.tensor(0.5), torch.Tensor([0.]).to(device), torch.Tensor([1.]).to(device))
@@ -237,7 +228,7 @@ def train(data_dir, model_dir, args):
             gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float())
             age_loss = criterion(age_outs, age_labels)
 
-            loss = (precision_mask * mask_loss + log_vars[0]) + (precision_gender * gender_loss + log_vars[0]) + (precision_age * age_loss + log_vars[2])
+            loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_loss 
             preds = mask_preds * 6 + gender_preds * 3 + age_preds
 
             loss.backward()
@@ -320,16 +311,7 @@ def train(data_dir, model_dir, args):
                 labels = labels.to(device)
                 mask_labels, gender_labels, age_labels = decode_func(labels)  
 
-                if args.log_var:
-                    mask_outs, gender_outs, age_outs, log_vars = model(inputs)
-                    precision_mask = torch.exp(-log_vars[0])
-                    precision_age = torch.exp(-log_vars[2])
-                    precision_gender = torch.exp(-log_vars[0])
-                else:  
-                    mask_outs, gender_outs, age_outs = model(inputs) 
-                    precision_mask = 0.25
-                    precision_age = 0.5
-                    precision_gender = 0.25 
+                mask_outs, gender_outs, age_outs = model(inputs)   
 
                 mask_preds = torch.argmax(mask_outs, dim=-1)
                 age_preds = torch.argmax(age_outs, dim=-1)
@@ -340,7 +322,7 @@ def train(data_dir, model_dir, args):
                 gender_loss = gender_crierion(gender_outs.float().squeeze(), gender_labels.float()).item()
 
                 preds = mask_preds * 6 + gender_preds * 3 + age_preds
-                loss = (precision_mask * mask_loss + log_vars[0]) + (precision_gender * gender_loss + log_vars[0]) + (precision_age * age_loss + log_vars[2])
+                loss = 0.25 * mask_loss + 0.25 * gender_loss + 0.5 * age_loss
 
                 mask_matches = eval_dict[args.evaluation](mask_preds.data.cpu(), mask_labels.data.cpu()).item()
                 gender_matches = eval_dict[args.evaluation](gender_preds.data.cpu(), gender_labels.data.cpu()).item()
@@ -362,7 +344,7 @@ def train(data_dir, model_dir, args):
                 gender_val_acc_items.append(gender_matches)
                 age_val_loss_items.append(age_loss)
                 age_val_acc_items.append(age_matches)
-                val_loss_items.append(loss.cpu().numpy())
+                val_loss_items.append(loss)
                 val_evaluation_items.append(evaluation_item)
 
             if args.confusion:
@@ -451,9 +433,6 @@ if __name__ == '__main__':
     parser.add_argument('--confusion', type=bool, default=False, help='make confusion matrix about each task, logging on wandb')
     # loss 말고 acc, f1 선택할 수 있는 기능
     parser.add_argument('--evaluation', type=str, default='accuracy', help='set evaluation function (accuracy, f1)')
-
-    # 임시 
-    parser.add_argument('--log_var', type=bool, default=False, help='set logvar')
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
