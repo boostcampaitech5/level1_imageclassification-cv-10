@@ -7,51 +7,54 @@ based on baseline_v2
 
 ## 1. Train 
 ---
+### 1-1. default train (num_classes=18)
 ```
-python train.py --augmentation AlbumAugmentation --model efficientnetv2_rw_m --criterion focal --name {name} --log_interval 30 --optimizer Adam --epochs 10
+python train.py --model {model_name} --name {name}
 ```
-after Merge pull request #16
+### 1-2. Single task train (each task:['mask', 'gender', 'age'])
 ```
-python train.py --augmentation AlbumAugmentation \
---model efficientnetv2_rw_m --criterion f1 --name {name} \
---log_interval 30 --optimizer Adam --epochs 20 \
---task {default or single task name} \
---confusion True --wdb_on True --evaluation f1
+python train.py --model {model_name} --name {name} --task {task_name}
 ```
-if you want Multitask learning:
+### 1-3. Multi task train 
 ```
-python train_multi.py --model multi_efficientnetv2_rw_m \
---name {name} --task multi --criterion focal \
---epochs 20
+python train_multi.py --model multi_{model_name} --name {name}
 ```
+## 2. Inference (make output.csv) 
+---
+Single task inference Not supported. 
 
-### 1-1. To use `wandb`
+### 2-1. default inference 
+```
+python inference.py --model {model_name} --model_dir ./model/{name}
+```
+### 2-2 multi task inference 
+```
+python inference_multi.py --model multi_{model_name} --model_dir ./model/{name}
+```
+multi task inference case: 
+Can get `output_default.csv(18 classes)`, `output_multi.csv(each task)` 
+
+## 3. Additional 
+### 3-1. To use `wandb`
 if you turn on your wandb, set parameter 
 ```
 --wdb_on True
 ```
 you can set wandb name
 
-`--model {tag}`  
-Example case, tag='efficientnetv2_rw_m'
+`--model {model_name}`  
 
-`wandb.run.name = {tag}` 
-
-### 1-2. To Train each single task 
-Set parameter
-```
---task {task_name}
-```
-task_name:
-
-> 'default': default setting (18 classes)
-
-> 'age' or 'gender' or 'mask': each single task train (each class num)
-
-### 1-3. To logging Confusion Matrix 
+### 3-2. To logging Confusion Matrix 
 Set parameter 
 ```
 --confusion True
+```
+you can see in terminal 
+```
+                    < 30  >= 30 and < 60     >= 60
+< 30            0.904342        0.093623  0.002035
+>= 30 and < 60  0.052554        0.900814  0.046632
+>= 60           0.005714        0.400000  0.594286
 ```
 But, when you set parameter `--confusion True` and `--task default` same time,
 ```
@@ -59,27 +62,19 @@ But, when you set parameter `--confusion True` and `--task default` same time,
 ```
 by this code raise error 
 
-### 1-4. Setting Callback condition 
-Set parameter 
-```
---evaluation {accuracy or f1}
-```
-In previous update(before merge pull request #16), callback option is fixed "accuracy"
+### 3-3. Setting parameters
+You can set the various parameters you want.
 
-## 2. Inference (make output.csv) 
----
-you must set train prameter `--task default` 
- 
-```
-python inference.py --model efficientnetv2_rw_m --model_dir ./model/{name}
-```
+`--augmentation`: set_transform에 의해 정해지는 augmentation 기법 (default: AlbumAugmentation)
 
-you can see terminal message
-```
-Inference Done! Inference result saved at ./output/output.csv
-```
+`--optimizer`: torch.optim에 존재하는 optimizer(default: Adam)
 
-## 3. dir structure
+`--criterion`: loss함수 / loss.py에 존재하는 loss 함수 사용 가능 (default: focal Loss)
+
+`--evaluation`: best model 선정 기준 / accuracy, f1 score (default: accuracy)
+
+
+## 4. dir structure
 ---
 ```
 main
@@ -89,9 +84,10 @@ main
 ├───dataset.py
 ├───inference.py    
 ├───output
-│     └───output.csv
+│     ├───output_default.csv
+│     └───output_multi.csv
 └───model
      └───{name}
-          └───{epoch}_evaluation_{best_val_evaluation}.pth
+          └───{epoch}_{evaluation}_{best_val_evaluation}.pth
           
 ```
