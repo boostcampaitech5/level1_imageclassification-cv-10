@@ -435,3 +435,54 @@ class multi_swin_tiny_patch4_window7_224_Model(nn.Module):
         x = self.model(x)
         
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class logvar_multi_vit_base_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(logvar_multi_vit_base_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('vit_base_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        mask_out = self.fc1(x)
+        gender_out = self.fc2(x)
+        age_out = self.fc3(x) 
+        
+        log_vars = [mask_out.vars(), 0, age_out.vars()]
+
+        return mask_out, torch.sigmoid(gender_out), age_out, log_vars 
