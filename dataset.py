@@ -13,6 +13,8 @@ from torchvision.transforms import Resize, ToTensor, Normalize, Compose
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
+from sklearn.model_selection import train_test_split
+
 IMG_EXTENSIONS = [
     ".jpg", ".JPG", ".jpeg", ".JPEG", ".png",
     ".PNG", ".ppm", ".PPM", ".bmp", ".BMP",
@@ -242,10 +244,31 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
 
     @staticmethod
     def _split_profile(profiles, val_ratio):
-        length = len(profiles)
-        n_val = int(length * val_ratio)
-        val_indices = set(random.sample(range(length), k=n_val))
-        train_indices = set(range(length)) - val_indices
+        print('custom_split')
+        # gender + age label list 생성 0~5 
+        gender_age_list = []
+        for profile in profiles:
+            _, gender, _, age = profile.split("_")
+            gender = GenderLabels.from_str(gender)
+            age = AgeLabels.from_number(age)
+            gender_age_list.append(gender * 3 + age) 
+
+        # 각 label 별로 profile_index 목록 만들기 ex) '0': [0인 profile_index 목록~], '1': [1인 profile_index 목록~]...
+        label_indices = [[], [], [], [], [], []]
+        for index, label in enumerate(gender_age_list):
+            label_indices[label].append(index)
+
+        # 각 label 별 shuffle
+        for label_indexes in label_indices:
+            random.shuffle(label_indexes)
+
+        # 각 레이블에서 train set과 validation set의 인덱스를 추출합니다.
+        train_indices, val_indices = [], []
+        for label_indexes in label_indices:
+            label_train_indices, label_val_indices = train_test_split(label_indexes, test_size=int(len(label_indexes) * val_ratio))
+            train_indices += label_train_indices
+            val_indices += label_val_indices
+        
         return {
             "train": train_indices,
             "val": val_indices
@@ -253,7 +276,7 @@ class MaskSplitByProfileDataset(MaskBaseDataset):
     
     def setup(self):
         profiles = os.listdir(self.data_dir)
-        profiles = [profile for profile in profiles if not profile.startswith(".")]
+        profiles = [profile for profile in profiles if not profile.startswith(".")] # 프로필 목록 ex: 000004_male_Asian_54....
         split_profiles = self._split_profile(profiles, self.val_ratio)
         cnt = 0
         for phase, indices in split_profiles.items():
