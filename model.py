@@ -380,3 +380,184 @@ class multi_swinv2_tiny_window8_256_Model(nn.Module):
         x = self.model(x)
         
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_swinv2_tiny_window8_256_Model(nn.Module):
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_swinv2_tiny_window8_256_Model, self).__init__()
+        self.model = timm.create_model('swinv2_tiny_window8_256', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'layers').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_xcit_tiny_12_p16_224_dist_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_xcit_tiny_12_p16_224_dist_Model, self).__init__()
+        self.model = timm.create_model('xcit_tiny_12_p16_224_dist', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_pit_s_distilled_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_pit_s_distilled_224_Model, self).__init__()
+        self.model = timm.create_model('pit_s_distilled_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_deit_small_distilled_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_deit_small_distilled_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('deit_small_distilled_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)

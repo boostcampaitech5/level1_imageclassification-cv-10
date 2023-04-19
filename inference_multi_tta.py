@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from dataset import TestDataset, MaskBaseDataset
 import numpy as np
 from torchvision.transforms import ColorJitter
-from tqdm import tqdm
+
 
 class MyError(Exception):
     def __str__(self):
@@ -66,7 +66,7 @@ def inference(data_dir, model_dir, output_dir, args):
     oof_age = None
     oof_gender = None
     print(f'models: {model_list}')
-    for m_idx,model_name in tqdm(enumerate(model_list)): 
+    for m_idx,model_name in enumerate(model_list): 
         preds = []
         mask_preds = []
         gender_preds = []
