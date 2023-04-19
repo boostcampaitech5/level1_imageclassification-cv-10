@@ -338,7 +338,7 @@ class multi_swin_tiny_patch4_window7_224_Model(nn.Module):
         
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
     
-class multi_swinv2_tiny_window8_256_Model(nn.Module):
+    class multi_swinv2_tiny_window8_256_Model(nn.Module):
     def __init__(self, device=None, lr=1e-3):
         super(multi_swinv2_tiny_window8_256_Model, self).__init__()
         self.model = timm.create_model('swinv2_tiny_window8_256', pretrained=True)
@@ -558,6 +558,593 @@ class multi_deit_small_distilled_patch16_224_Model(nn.Module):
         if device:
             self.model.to(device)
     def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    class multi_deit3_base_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_deit3_base_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('deit3_base_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)    
+
+class multi_vit_base_patch16_224_sam_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_base_patch16_224_sam_Model, self).__init__()
+        self.model = timm.create_model('vit_base_patch16_224_sam', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_base_patch32_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_base_patch32_224_Model, self).__init__()
+        self.model = timm.create_model('vit_base_patch32_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+class multi_deit3_large_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_deit3_large_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('deit3_large_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_large_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_large_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('vit_large_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 512),
+            nn.GELU(),
+            nn.Dropout(),
+            nn.Linear(512, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 512),
+            nn.GELU(),
+            nn.Dropout(),
+            nn.Linear(512, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 512),
+            nn.GELU(),
+            nn.Dropout(),
+            nn.Linear(512, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_base_patch8_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_base_patch8_224_Model, self).__init__()
+        self.model = timm.create_model('vit_base_patch8_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_base_patch16_rpn_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_base_patch16_rpn_224_Model, self).__init__()
+        self.model = timm.create_model('vit_base_patch16_rpn_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_relpos_base_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_relpos_base_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('vit_relpos_base_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_srelpos_small_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_srelpos_small_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('vit_srelpos_small_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_base_patch16_224_in21k_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_base_patch16_224_in21k_Model, self).__init__()
+        self.model = timm.create_model('vit_base_patch16_224_in21k', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_srelpos_medium_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_srelpos_medium_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('vit_srelpos_medium_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_small_patch16_224_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_small_patch16_224_Model, self).__init__()
+        self.model = timm.create_model('vit_small_patch16_224', pretrained=True)
+        self.fc1 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.SELU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 2048),
+            nn.SELU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+        self.fc2 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.SELU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.SELU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 1)
+        )   
+        self.fc3 = nn.Sequential(
+            nn.Linear(1000, 4096),
+            nn.SELU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.SELU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 3),
+        )   
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+    
+class multi_vit_large_patch16_224s_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_large_patch16_224s_Model, self).__init__()
+        self.model = timm.create_model('vit_large_patch16_224', pretrained=True)
+        self.fc1 = nn.Linear(1000,3)  
+        self.fc2 = nn.Linear(1000,1)   
+        self.fc3 = nn.Linear(1000,3)
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x = self.model(x)
+        
+        return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
+
+class multi_vit_large_patch16_224ss_Model(nn.Module):
+    """
+    train_multi.py 실행 시 --resize 224 224 를 추가로 입력
+    """
+    def __init__(self, device=None, lr=1e-3):
+        super(multi_vit_large_patch16_224ss_Model, self).__init__()
+        self.model = timm.create_model('vit_large_patch16_224', pretrained=True)
+        self.fc1 = nn.Linear(1024,3)  
+        self.fc2 = nn.Linear(1024,1)   
+        self.fc3 = nn.Linear(1024,3)
+        
+
+        self.train_params = [{'params': getattr(self.model, 'blocks').parameters(), 'lr': lr / 10, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc1').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc2').parameters(), 'lr': lr, 'weight_decay':5e-4},
+                             {'params': getattr(self, 'fc3').parameters(), 'lr': lr, 'weight_decay':5e-4}]
+        if device:
+            self.model.to(device)
+    def forward(self, x):
+        x=self.model.head.global_pool(x)
         x = self.model(x)
         
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
