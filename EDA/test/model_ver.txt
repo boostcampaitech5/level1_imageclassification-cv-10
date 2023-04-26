@@ -1,0 +1,93 @@
+# 1. submisson 20 * 1
+
+timm = efficientnetv2_rw_m
+-----------------------------
+batch_size = 64
+num_workers = 4
+num_classes = 18
+
+num_epochs = 100  # 학습할 epoch의 수
+log_interval = 80
+
+lr = 1e-4
+lr_decay_step = 10
+criterion_name = 'cross_entropy' # loss의 이름
+loss = 0.5*age_loss+0.25*gender_loss+0.25*mask_loss
+------------------------------
+transform = BaseAugmentation(
+    resize=[128, 96],
+    mean=dataset.mean,
+    std=dataset.std,
+)
+-------------------------------
+model = self.fc = nn.Linear(2152, num_classes) # 원본
+bestmodel = bestmodel 15 * 5 (0.5157	60.7619)
+=========================================================
+# 2. submisson 15 * 5
+
+timm = efficientnetv2_rw_m
+-----------------------------
+
+batch_size = 64
+num_workers = 4
+num_classes = 18
+
+num_epochs = 15  # 학습할 epoch의 수
+log_interval = 80
+
+lr = 1e-4
+lr_decay_step = 10
+criterion_name = 'cross_entropy' # loss의 이름
+loss = 0.5*age_loss+0.25*gender_loss+0.25*mask_loss
+-----------------------------
+transform = BaseAugmentation(
+    resize=[128, 96],
+    mean=dataset.mean,
+    std=dataset.std,
+)
+-------------------------------
+model = self.fc = nn.Linear(2152, num_classes) # 원본
+bestmodel = bestmodel 20 * 1 (0.5419	63.4762)
+=========================================================
+# 3. submisson 5 * 5(1)
+
+timm = efficientnetv2_rw_m
+-------------------------------
+
+batch_size = 64
+num_workers = 4
+num_classes = 18
+
+num_epochs = 5  # 학습할 epoch의 수
+log_interval = 80
+
+lr = 1e-4
+lr_decay_step = 10
+criterion_name = 'cross_entropy' # loss의 이름
+loss = 0.5*age_loss+0.25*gender_loss+0.25*mask_loss
+-------------------------------
+transform = BaseAugmentation(
+    resize=[128, 96],
+    mean=dataset.mean,
+    std=dataset.std,
+)
+-------------------------------
+model =
+
+self.fc1 = nn.Linear(2152, 4096)
+self.fc2 = nn.Linear(4096, 4096)
+self.fc3 = nn.Linear(4096, num_classes)
+
+x = self.fc1(x)
+x = F.relu(x)
+x = self.dropout1(x)
+
+x = self.fc2(x)
+x = F.relu(x)
+x = self.dropout2(x)
+
+x = self.fc3(x)
+bestmodel = bestmodel 5 * 5(1) (0.5419	63.4762)
+=========================================================
+
+    
