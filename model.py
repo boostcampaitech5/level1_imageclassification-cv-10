@@ -424,15 +424,16 @@ class multi_swinv2_tiny_window8_256_Model(nn.Module):
         
         return self.fc1(x), torch.sigmoid(self.fc2(x)), self.fc3(x)
     
-class multi_xcit_tiny_12_p16_224_dist_Model(nn.Module):
+class multi_xcit_medium_24_p8_224_dist_Model(nn.Module):
     """
     train_multi.py 실행 시 --resize 224 224 를 추가로 입력
     """
     def __init__(self, device=None, lr=1e-3):
-        super(multi_xcit_tiny_12_p16_224_dist_Model, self).__init__()
-        self.model = timm.create_model('xcit_tiny_12_p16_224_dist', pretrained=True)
+        super(multi_xcit_medium_24_p8_224_dist_Model, self).__init__()
+        self.model = timm.create_model('xcit_medium_24_p8_224_dist', pretrained=True)
+        self.model.head = Identity()
         self.fc1 = nn.Sequential(
-            nn.Linear(1000, 4096),
+            nn.Linear(512, 4096),
             nn.ReLU(True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
@@ -441,7 +442,7 @@ class multi_xcit_tiny_12_p16_224_dist_Model(nn.Module):
             nn.Linear(4096, 3),
         )   
         self.fc2 = nn.Sequential(
-            nn.Linear(1000, 4096),
+            nn.Linear(512, 4096),
             nn.ReLU(True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
@@ -450,7 +451,7 @@ class multi_xcit_tiny_12_p16_224_dist_Model(nn.Module):
             nn.Linear(4096, 1)
         )   
         self.fc3 = nn.Sequential(
-            nn.Linear(1000, 4096),
+            nn.Linear(512, 4096),
             nn.ReLU(True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
